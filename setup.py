@@ -8,14 +8,15 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 
 # Import library to retrieve version variable
-import fouriernet
+# import fouriernet
+__version__ = 0.1
 
 setup(
     name="fouriernet",
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=fouriernet.__version__,
+    version=__version__,
     description="Implementation of global Fourier convolution and FourierNet/FourierUNet",
     long_description='PyTorch implementations of global Fourier convolutions and FourierNet/FourierUNet from the paper "Programmable 3D snapshot microscopy with Fourier convolutional networks."',
     # The project's main homepage.
@@ -44,7 +45,8 @@ setup(
     keywords="computational microscopy, machine learning",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=["contrib", "docs", "tests"]),
+    packages=find_packages(exclude=["contrib", "docs", "tests"], where="src"),
+    package_dir={"": "src"},
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
     #   py_modules=["my_module"],
@@ -52,10 +54,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=[
-        "numpy",
-        "torch",
-    ],
+    install_requires=["numpy", "torch",],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
