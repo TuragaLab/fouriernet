@@ -23,16 +23,11 @@ class FourierNet2D(nn.Module):
         image = nn.leaky_relu(image, negative_slope=self.leaky_relu_slope)
         image = nn.GroupNorm(num_groups=1)(image)
 
-        # Second layer
-        image = nn.Conv(features=5, kernel_size=(11, 11), strides=(1, 1))(image)
-        image = nn.leaky_relu(image, negative_slope=self.leaky_relu_slope)
-        image = nn.GroupNorm(num_groups=1)(image)
-
         # Output layer
         image = nn.Conv(features=1, kernel_size=(11, 11), strides=(1, 1))(image)
         image = nn.relu(image)
 
-        return image
+        return image * scale
 
     @staticmethod
     def input_scaling(image: jnp.ndarray, scale: float) -> Tuple[jnp.ndarray, float]:
@@ -71,7 +66,7 @@ class FourierNet3D(nn.Module):
         # Output layer
         image = nn.Conv(features=1, kernel_size=(11, 7, 7), strides=(1, 1, 1))(image)
         image = nn.relu(image)
-        return image
+        return image * scale
 
     @staticmethod
     def input_scaling(image: jnp.ndarray, scale: float) -> Tuple[jnp.ndarray, float]:
