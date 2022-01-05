@@ -38,6 +38,16 @@ class FourierNet2D(nn.Module):
         return image / normed_scale, normed_scale
 
 
+# Multiplane version
+MultiFourierNet2D = nn.vmap(
+    FourierNet2D,
+    in_axes=0,
+    out_axes=0,
+    variable_axes={"params": 0},
+    split_rngs={"params": True},
+)
+
+
 class FourierNet3D(nn.Module):
     n_planes: int = 12
     n_features_per_plane: int = 5
