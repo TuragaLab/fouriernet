@@ -71,8 +71,8 @@ def complex_fan_in_bias(*args, **kwargs) -> Callable:
 
 def real_fan_in_bias(*args, **kwargs) -> Callable:
 
-    def _init(key, shape: NamedShape) -> jnp.ndarray:
-        fan_in, _ = _compute_fans(shape, in_axis=-1)
+    def _init(key, shape: NamedShape, fan_shape: NamedShape) -> jnp.ndarray:
+        fan_in, _ = _compute_fans(fan_shape, in_axis=-1)
         bound = 1.0 / jnp.sqrt(fan_in)
         return random.uniform(key, shape, minval=-bound, maxval=bound)
 
