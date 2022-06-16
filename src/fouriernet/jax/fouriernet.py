@@ -2,7 +2,7 @@ import jax.numpy as jnp
 from jax.lax import stop_gradient
 import flax.linen as nn
 
-from .layers import FourierConv2D
+from .layers import FourierConv
 
 from typing import Tuple
 from einops import rearrange
@@ -10,7 +10,7 @@ from einops import rearrange
 
 class FourierNet2D(nn.Module):
 
-    fourier_features: int = 8
+    fourier_features: int = 5
     fourier_strides: Tuple[int, int] = (2, 2)
     leaky_relu_slope: float = 0.01
 
@@ -19,7 +19,7 @@ class FourierNet2D(nn.Module):
         image, scale = self.input_scaling(image, scale=0.01)
 
         # First layer
-        image = FourierConv2D(self.fourier_features, self.fourier_strides)(image)
+        image = FourierConv(self.fourier_features, self.fourier_strides)(image)
         image = nn.leaky_relu(image, negative_slope=self.leaky_relu_slope)
         image = nn.GroupNorm(num_groups=1)(image)
 
@@ -46,6 +46,17 @@ MultiFourierNet2D = nn.vmap(
     variable_axes={"params": 0},
     split_rngs={"params": True},
 )
+
+# Multiplane version without vmap
+class ManualMultiFourierNet2D(nn.Module):
+    n_planes: int = 12
+    fourier_features: int = 5
+    fourier_strides: Tuple[int, int] = (2, 2)
+    leaky_relu_slope: float = 0.01
+
+    @nn.compact
+    def __call__(self, image: jnp.ndarray) -> jnp.ndarray:
+        pass
 
 
 class FourierNet3D(nn.Module):
