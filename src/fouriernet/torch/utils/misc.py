@@ -6,9 +6,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from learnedLFM.utils.complex import fftconvn
-
-
 def _list(x, repetitions=1):
     if hasattr(x, "__iter__") and not isinstance(x, str):
         return x
