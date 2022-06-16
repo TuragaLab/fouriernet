@@ -144,6 +144,6 @@ class FourierConv(nn.Module):
         y = jnp.sum(y, axis=-1)
 
         if self.use_bias:
-            bias = self.param("bias", self.bias_init, NamedShape(1, *[1 for d in range(ndim)], self.features))
+            bias = self.param("bias", self.bias_init, NamedShape(1, *[1 for d in range(ndim)], self.features), NamedShape(*kernel.shape))
             y = y + bias
         return y
