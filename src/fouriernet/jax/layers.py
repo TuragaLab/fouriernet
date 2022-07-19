@@ -6,7 +6,7 @@ from jax.core import NamedShape
 from jax.random import PRNGKey
 
 
-from .utils import complex_he_uniform, complex_fan_in_bias, real_fan_in_bias, next_order
+from .utils import complex_he_uniform, _compute_fans, fan_in_bias, next_order
 
 from typing import Tuple, Callable, Optional, Union, Sequence, Any
 Dtype = Any
@@ -37,13 +37,9 @@ class FourierConv(nn.Module):
     strides: Optional[Tuple[int, ...]] = None
     padding: Union[str, Sequence[Tuple[int, ...]]] = "SAME"
     use_bias: bool = True
-    dtype: Dtype = jnp.float64
-    kernel_init: Callable[
-        [PRNGKey, Shape, Dtype], jnp.ndarray
-    ] = complex_he_uniform()
-    bias_init: Callable[
-        [PRNGKey, Shape, Dtype], jnp.ndarray
-    ] = real_fan_in_bias()
+    dtype: Dtype = jnp.float32
+    kernel_init: Callable = complex_he_uniform
+    bias_init: Callable = fan_in_bias
 
     @nn.compact
     def __call__(self, inputs: jnp.ndarray) -> jnp.ndarray:
@@ -56,10 +52,8 @@ class FourierConv(nn.Module):
         Returns:
           The convolved data.
         """
-        inputs = jnp.asarray(inputs, self.dtype)
-        # Extract shapes used to make kernel from input (only matters on first
+        # extract shapes used to make kernel from input (only matters on first
         # call)
-        # TODO(dd): use explicit setup()
         in_features = inputs.shape[-1]
         kernel_size = inputs.shape[1:-1]
         ndim = len(kernel_size)
@@ -68,16 +62,16 @@ class FourierConv(nn.Module):
         else:
             strides = self.strides
 
-        # Kernel size must be modified to match padded and strided input size
+        # kernel size must be modified to match padded and strided input size
         if self.padding == "SAME" and strides == ((1,) * ndim):
             kernel_size = tuple(2 * k - 1 for k in kernel_size)
         elif strides != ((1,) * ndim):
             kernel_size = tuple(
                 k // (s - 1) for k, s in zip(kernel_size, strides)
             )
-        # Kernel size must be modified to make last dimension small due to
-        # Hermitian symmetry
         # TODO(dd): reimplement rfft kernel
+        # # kernel size must be modified to make last dimension small due to
+        # # Hermitian symmetry
         # kernel_size = kernel_size[:-1] + (
         #     kernel_size[-1] // 2 + 1,
         # )
@@ -86,19 +80,24 @@ class FourierConv(nn.Module):
             self.features,
         )
 
-        kernel = self.param("kernel", self.kernel_init, kernel_shape)
+        # NOTE(dd): the complex kernel must be stored as two real
+        # arrays for the gradients to be correct --- do not change the
+        # parameterization to be a complex number!
+        kernel = self.param("kernel", self.kernel_init(dtype=self.dtype), kernel_shape)
+        complex_kernel = kernel[0] + (1j * kernel[1])
 
         # Get padded shape to prevent circular convolution
         # TODO(dd): reimplement computing fast shape for FFTs
-        fft_shape = [2 * k1 - 1 for k1 in inputs.shape[1 : ndim + 1]]
+        fft_shape = tuple(2 * k1 - 1 for k1 in inputs.shape[1 : ndim + 1])
         fft_axes = tuple(range(1, ndim + 1))
-        fft = partial(jnp.fft.fftn, axes=fft_axes, s=fft_shape)
+        fft = partial(jnp.fft.fftn, axes=fft_axes)
         ifft = partial(jnp.fft.ifftn, axes=fft_axes)
 
-        # Transform signals and perform Fourier convolution
-        y = fft(inputs)
+        # transform signals and perform Fourier convolution
+        y = fft(jnp.pad(inputs, tuple((0, ffts - ins) for ins, ffts
+                                      in zip(inputs.shape, (inputs.shape[0],) + fft_shape + (inputs.shape[-1],)))))
         if strides != ((1,) * ndim):
-            # Apply stride by subsampling Fourier transformed input
+            # apply stride by subsampling Fourier transformed input
             total_dims = len(y.shape)
             y = lax.slice(
                 y,
@@ -106,14 +105,13 @@ class FourierConv(nn.Module):
                 limit_indices=tuple(s for s in y.shape),
                 strides=(1,) + strides + (1,),
             )
-        y = ifft(
-            y[..., jnp.newaxis] * kernel)
+        y = ifft(y[..., jnp.newaxis] * complex_kernel)
 
-        # Get real features
+        # get real features
         y = y.real
 
         if self.padding == "SAME":
-            # Crop image back to size of input
+            # crop image back to size of input
             start_idx = (
                 (0,)
                 + tuple(
@@ -140,10 +138,12 @@ class FourierConv(nn.Module):
         else:
             return NotImplemented
 
-        # Sum over input feature dimension
-        y = jnp.sum(y, axis=-1)
+        # sum over input feature dimension
+        y = jnp.sum(y, axis=-2)
 
         if self.use_bias:
-            bias = self.param("bias", self.bias_init, NamedShape(1, *[1 for d in range(ndim)], self.features), NamedShape(*kernel.shape))
-            y = y + bias
+            fan_in, _ = _compute_fans(NamedShape(*kernel_shape))
+            bias = self.param("bias", self.bias_init(fan_in, dtype=self.dtype), NamedShape(self.features,))
+            bias.reshape((1,) * (y.ndim - bias.ndim) + bias.shape)
+            y += bias
         return y
