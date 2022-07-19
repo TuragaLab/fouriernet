@@ -1,13 +1,13 @@
 import jax.numpy as jnp
-from jax.nn.initializers import lecun_normal, he_uniform, variance_scaling
 from jax.lax import complex
 from jax.core import NamedShape
 from jax import random
 import numpy as np
 
 from functools import partial
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Any
 
+DType = Any
 
 def next_order(val: int) -> int:
     return int(2 ** np.ceil(np.log2(val)))
@@ -40,40 +40,45 @@ def _compute_fans(shape: NamedShape, in_axis=-2, out_axis=-1,
   return fan_in, fan_out
 
 
-def complex_lecun_normal(*args, **kwargs) -> Callable:
-    """Thin wrapper so lecun_normal() returns complex number."""
-
-    def _init(key, shape: Iterable[int]) -> jnp.ndarray:
-        return complex(*normal(key, (2, *shape)))
-
-    normal = lecun_normal(*args, **kwargs)
+def he_uniform(dtype: DType = jnp.float32) -> Callable:
+    """
+    He/Kaiming uniform initialization that matches PyTorch for linear layers.
+    """
+    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
+        shape = NamedShape(*shape)
+        fan_in, fan_out = _compute_fans(shape)
+        a = jnp.sqrt(5)
+        gain = jnp.sqrt(2.0 / (1 + a ** 2))
+        std = gain / jnp.sqrt(fan_in)
+        bound = jnp.sqrt(3.0) * std
+        return random.uniform(key, shape, dtype, minval=-bound, maxval=bound)
     return _init
 
 
-def complex_he_uniform(*args, **kwargs) -> Callable:
-    """Thin wrapper so he_uniform() returns complex number."""
-
-    def _init(key, shape: Iterable[int]) -> jnp.ndarray:
-        return complex(*uniform(key, (2, *shape)))
-
-    uniform = variance_scaling(2.0 / 3.0, "fan_in", "uniform", *args, **kwargs)
+def complex_he_uniform(dtype: DType = jnp.float32) -> Callable:
+    """
+    Version of He/Kaiming uniform linear layer initialization for a
+    complex number. Note that this doesn't actually return a complex
+    number data type! This is intended for use with complex number
+    parameters that are actually stored as two real arrays. Complex
+    parameters are stored in this way to ensure gradients are in the
+    correct direction.
+    """
+    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
+        shape = NamedShape(*shape)
+        fan_in, fan_out = _compute_fans(shape)
+        a = jnp.sqrt(5)
+        gain = jnp.sqrt(2.0 / (1 + a ** 2))
+        std = gain / jnp.sqrt(fan_in)
+        bound = jnp.sqrt(3.0) * std
+        return random.uniform(key, (2, *shape), dtype, minval=-bound, maxval=bound)
     return _init
 
 
-def complex_fan_in_bias(*args, **kwargs) -> Callable:
-
-    def _init(key, shape: NamedShape) -> jnp.ndarray:
-        fan_in, _ = _compute_fans(shape, in_axis=-1)
+def fan_in_bias(fan_in: int, dtype: DType = jnp.float32) -> Callable:
+    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
+        shape = NamedShape(*shape)
         bound = 1.0 / jnp.sqrt(fan_in)
-        return complex(*random.uniform(key, (2, *shape), minval=-bound, maxval=bound))
-
+        return random.uniform(key, shape, dtype=dtype, minval=-bound, maxval=bound)
     return _init
 
-def real_fan_in_bias(*args, **kwargs) -> Callable:
-
-    def _init(key, shape: NamedShape, fan_shape: NamedShape) -> jnp.ndarray:
-        fan_in, _ = _compute_fans(fan_shape, in_axis=-1)
-        bound = 1.0 / jnp.sqrt(fan_in)
-        return random.uniform(key, shape, minval=-bound, maxval=bound)
-
-    return _init
