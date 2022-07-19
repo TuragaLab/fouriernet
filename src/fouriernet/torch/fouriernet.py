@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
+from collections import OrderedDict
+
 from .unet import FUNet3D
 from .utils import *
 from .utils import _list, _pair, _triple
@@ -255,7 +257,6 @@ class FourierConv2D(nn.Module):
 
         # calculate features in fourier space
         # (add dimension for batch broadcasting)
-        print(self.weight.shape, fourier_im.shape)
         fourier_feats = cmul2(fourier_im.unsqueeze(1), self.weight)
 
         # retrieve real component of signal

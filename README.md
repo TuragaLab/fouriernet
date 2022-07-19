@@ -6,10 +6,15 @@ This repository contains official PyTorch code for implementing Fourier convolut
 ![Figure 2 from the paper showing how FourierNet succeeds at optimizing microscopes](figs/fig2.png)
 ![Figure 4 from the paper showing how FourierNet beats state of the art reconstruction algorithms for computational photography](figs/fig4.png)
 
-What is included:
+We include a pytorch implementation of
+* Fourier convolutions and multiscale Fourier convolutions
+* FourierNets and FourierUNets
 
-* PyTorch implementation of Fourier convolutions and multiscale Fourier convolutions
-* PyTorch implementation of FourierNets and FourierUNets
+We include a Jax implementation of
+* Fourier convolutions
+* FourierNets
+
+The Pytorch and Jax implementations are slightly different; the Jax version is faster, the pytorch version has a few more features. 
 
 What is **not** included:
 
@@ -19,7 +24,7 @@ What is **not** included:
 
 # Installation
 
-There are two steps to installation, depending on whether you are interested in only the Fourier convolution implementations or also the simulation package required to run the experiment scripts. Either way, first make sure that you've installed [PyTorch](https://pytorch.org) and its necessary dependencies for your device.
+There are two steps to installation, depending on whether you are interested in only the Fourier convolution implementations or also the simulation package required to run the experiment scripts. Either way, first make sure that you've installed [PyTorch](https://pytorch.org) or [Jax](https://github.com/google/jax#installation) and its necessary dependencies for your device. 
 
 ## Installing Fourier convolutions/FourierNet/FourierUNet
 
