@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 from jax.core import NamedShape
 from jax.lax import stop_gradient
@@ -21,7 +22,6 @@ class FourierNet2D(nn.Module):
     @nn.compact
     def __call__(self, image: jnp.ndarray) -> jnp.ndarray:
         image, scale = self.input_scaling(image, scale=self.quantile_scale)
-        # image = nn.GroupNorm(num_groups=None, group_size=1, epsilon=1e-5)(image)
 
         image = FourierConv(self.fourier_features, self.fourier_strides)(image)
         image = nn.leaky_relu(image, negative_slope=self.leaky_relu_slope)
@@ -31,15 +31,13 @@ class FourierNet2D(nn.Module):
         image = nn.Conv(features=1, kernel_size=(11, 11), strides=(1, 1), padding='SAME', kernel_init=he_uniform(), bias_init=fan_in_bias(fan_in), precision=self.precision)(image)
         image = nn.relu(image)
 
-        # return image
         return image * scale
 
     @staticmethod
     def input_scaling(image: jnp.ndarray, scale: float) -> Tuple[jnp.ndarray, float]:
         """Scales image, returns image / (median(image) * scale).
         ** Stops gradients on scale**."""
-        # normed_scale = stop_gradient(jnp.median(image) * scale)
-        normed_scale = jnp.median(image) * scale
+        normed_scale = stop_gradient(jnp.median(image)) * scale
         return image / normed_scale, normed_scale
 
 
