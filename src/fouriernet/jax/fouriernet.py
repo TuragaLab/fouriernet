@@ -86,8 +86,7 @@ class FourierNet3D(nn.Module):
         Scales image, returns image / (median(image) * scale).
         ** Stops gradients on scale**.
         """
-        # normed_scale = stop_gradient(jnp.median(image) * scale)
-        normed_scale = jnp.median(image) * scale
+        normed_scale = stop_gradient(jnp.median(image)) * scale
         return image / normed_scale, normed_scale
 
 
