@@ -84,7 +84,7 @@ class FourierConv(nn.Module):
         # arrays for the gradients to be correct --- do not change the
         # parameterization to be a complex number!
         kernel = self.param("kernel", self.kernel_init(dtype=self.dtype), kernel_shape)
-        complex_kernel = kernel[0] + (1j * kernel[1])
+        complex_kernel = lax.complex(kernel[0], kernel[1])
 
         # Get padded shape to prevent circular convolution
         # TODO(dd): reimplement computing fast shape for FFTs
@@ -217,8 +217,7 @@ class SmallFourierConv(nn.Module):
 
         # get padded shape to prevent circular convolution
         # TODO(dd): reimplement computing fast shape for FFTs
-        signal_fft_shape = tuple(k1 + k2 for k1, k2 in zip(inputs.shape[1:ndim + 1], kernel_size))
-        signal_fft_shape = tuple(s + 1 if (s % 2 == 1) else s for s in signal_fft_shape)
+        signal_fft_shape = tuple(k1 + k2 - 1 for k1, k2 in zip(inputs.shape[1:ndim + 1], kernel_size))
         signal_fft_axes = tuple(range(1, ndim + 1))
         signal_fft = partial(jnp.fft.fftn, axes=signal_fft_axes)
         ifft = partial(jnp.fft.ifftn, axes=signal_fft_axes)
@@ -242,10 +241,8 @@ class SmallFourierConv(nn.Module):
         kernel_fft_shape = tuple(k2 for k2 in y.shape[1:ndim + 1])
         kernel_fft = partial(jnp.fft.fftn, s=kernel_fft_shape, axes=kernel_fft_axes)
         complex_kernel = kernel_fft(kernel)
-
         # perform fourier convolution
         y = ifft(y[..., jnp.newaxis] * complex_kernel)
-
         # get real features
         y = y.real
 
