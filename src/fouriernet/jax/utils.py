@@ -40,18 +40,18 @@ def _compute_fans(shape: NamedShape, in_axis=-2, out_axis=-1,
   return fan_in, fan_out
 
 
-def he_uniform(dtype: DType = jnp.float32) -> Callable:
+def he_uniform(dtype: DType = jnp.float32, scale: float = 1.0, shift: float = 0.0) -> Callable:
     """
     He/Kaiming uniform initialization that matches PyTorch for linear layers.
     """
     def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
         shape = NamedShape(*shape)
-        fan_in, fan_out = _compute_fans(shape)
+        fan_in, _ = _compute_fans(shape)
         a = jnp.sqrt(5)
         gain = jnp.sqrt(2.0 / (1 + a ** 2))
         std = gain / jnp.sqrt(fan_in)
         bound = jnp.sqrt(3.0) * std
-        return random.uniform(key, shape, dtype, minval=-bound, maxval=bound)
+        return scale * random.uniform(key, shape, dtype, minval=-bound, maxval=bound) + shift
     return _init
 
 
@@ -75,10 +75,10 @@ def complex_he_uniform(dtype: DType = jnp.float32) -> Callable:
     return _init
 
 
-def fan_in_bias(fan_in: int, dtype: DType = jnp.float32) -> Callable:
+def fan_in_bias(fan_in: int, dtype: DType = jnp.float32, scale: float = 1.0, shift: float = 0.0) -> Callable:
     def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
         shape = NamedShape(*shape)
         bound = 1.0 / jnp.sqrt(fan_in)
-        return random.uniform(key, shape, dtype=dtype, minval=-bound, maxval=bound)
+        return scale * random.uniform(key, shape, dtype=dtype, minval=-bound, maxval=bound) + shift
     return _init
 
