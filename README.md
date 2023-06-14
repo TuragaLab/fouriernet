@@ -1,20 +1,14 @@
 # Fourier Convolutions
 
-This repository contains official PyTorch code for implementing Fourier convolutions and FourierNets/FourierUNets from the paper: [*Programmable 3D snapshot microscopy with Fourier convolutional networks*](https://arxiv.org/abs/2104.10611).
+This repository contains official PyTorch code for implementing Fourier convolutions and FourierNets/FourierUNets from the paper: [*FourierNets enable the design of highly non-local optical encoders for computational imaging*](https://arxiv.org/abs/2104.10611).
 
 ![Figure 1 from the paper showing our FourierNet/FourierUNet architectures](figs/fig1.png)
 ![Figure 2 from the paper showing how FourierNet succeeds at optimizing microscopes](figs/fig2.png)
 ![Figure 4 from the paper showing how FourierNet beats state of the art reconstruction algorithms for computational photography](figs/fig4.png)
 
-We include a pytorch implementation of
+We include PyTorch and JAX implementations of
 * Fourier convolutions and multiscale Fourier convolutions
 * FourierNets and FourierUNets
-
-We include a Jax implementation of
-* Fourier convolutions
-* FourierNets
-
-The Pytorch and Jax implementations are slightly different; the Jax version is faster, the pytorch version has a few more features. 
 
 What is **not** included:
 

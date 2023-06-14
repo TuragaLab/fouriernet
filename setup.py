@@ -18,7 +18,7 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=__version__,
     description="Implementation of global Fourier convolution and FourierNet/FourierUNet",
-    long_description='PyTorch implementations of global Fourier convolutions and FourierNet/FourierUNet from the paper "Programmable 3D snapshot microscopy with Fourier convolutional networks."',
+    long_description='PyTorch and JAX implementations of global Fourier convolutions and FourierNet/FourierUNet from the paper "FourierNets enable the design of highly non-local optical encoders for computational imaging."',
     # The project's main homepage.
     url="https://github.com/turagalab/fouriernet",
     # Author details
@@ -54,7 +54,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["numpy", "torch",],
+    install_requires=["numpy"],
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
     # for example:
