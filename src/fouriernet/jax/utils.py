@@ -1,9 +1,9 @@
 import jax.numpy as jnp
 from jax.lax import complex
-from jax.core import NamedShape
 from jax import random
 import numpy as np
 
+import math
 from functools import partial
 from typing import Callable, Iterable, Any
 
@@ -13,7 +13,7 @@ def next_order(val: int) -> int:
     return int(2 ** np.ceil(np.log2(val)))
 
 
-def _compute_fans(shape: NamedShape, in_axis=-2, out_axis=-1,
+def _compute_fans(shape: tuple[int, ...], in_axis=-2, out_axis=-1,
                   batch_axis=()):
   """
   From jax._src.nn.initializers
@@ -34,7 +34,7 @@ def _compute_fans(shape: NamedShape, in_axis=-2, out_axis=-1,
     batch_size = shape[batch_axis]
   else:
     batch_size = int(np.prod([shape[i] for i in batch_axis]))
-  receptive_field_size = shape.total / in_size / out_size / batch_size
+  receptive_field_size = math.prod(shape) / in_size / out_size / batch_size
   fan_in = in_size * receptive_field_size
   fan_out = out_size * receptive_field_size
   return fan_in, fan_out
@@ -44,8 +44,7 @@ def he_uniform(dtype: DType = jnp.float32, scale: float = 1.0, shift: float = 0.
     """
     He/Kaiming uniform initialization that matches PyTorch for linear layers.
     """
-    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
-        shape = NamedShape(*shape)
+    def _init(key, shape: tuple[int, ...], dtype=dtype) -> jnp.ndarray:
         fan_in, _ = _compute_fans(shape)
         a = jnp.sqrt(5)
         gain = jnp.sqrt(2.0 / (1 + a ** 2))
@@ -64,8 +63,7 @@ def complex_he_uniform(dtype: DType = jnp.float32) -> Callable:
     parameters are stored in this way to ensure gradients are in the
     correct direction.
     """
-    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
-        shape = NamedShape(*shape)
+    def _init(key, shape: tuple[int, ...], dtype=dtype) -> jnp.ndarray:
         fan_in, fan_out = _compute_fans(shape)
         a = jnp.sqrt(5)
         gain = jnp.sqrt(2.0 / (1 + a ** 2))
@@ -76,8 +74,7 @@ def complex_he_uniform(dtype: DType = jnp.float32) -> Callable:
 
 
 def fan_in_bias(fan_in: int, dtype: DType = jnp.float32, scale: float = 1.0, shift: float = 0.0) -> Callable:
-    def _init(key, shape: NamedShape, dtype=dtype) -> jnp.ndarray:
-        shape = NamedShape(*shape)
+    def _init(key, shape: tuple[int, ...], dtype=dtype) -> jnp.ndarray:
         bound = 1.0 / jnp.sqrt(fan_in)
         return scale * random.uniform(key, shape, dtype=dtype, minval=-bound, maxval=bound) + shift
     return _init
